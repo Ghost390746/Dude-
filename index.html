@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>CASS — Advanced Fun Website</title>
+<style>
+  :root{
+    --bg:#0f1724; --card:#0b1220; --accent:#7df9ff; --muted:#9aa9b2;
+    --glass: rgba(255,255,255,0.03);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,#071025 0%, #08162a 100%);color:#e6f7fb;}
+  header{display:flex;align-items:center;gap:16px;padding:14px 20px;background:linear-gradient(90deg, rgba(255,255,255,0.02), transparent);box-shadow:0 2px 10px rgba(0,0,0,0.3);position:sticky;top:0;z-index:5;}
+  .logo{font-weight:800;font-size:20px;color:var(--accent);letter-spacing:1px}
+  nav{display:flex;gap:10px;flex-wrap:wrap}
+  nav button{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px 12px;border-radius:8px;color:inherit;cursor:pointer}
+  main{padding:24px;max-width:1200px;margin:18px auto;display:grid;grid-template-columns: 300px 1fr; gap:20px;}
+  .sidebar{background:var(--card);padding:14px;border-radius:12px;min-height:300px}
+  .widget{background:var(--glass);padding:12px;border-radius:10px;margin-bottom:12px}
+  .content{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:12px;min-height:600px}
+  h1,h2{margin:8px 0 12px 0}
+  .muted{color:var(--muted);font-size:13px}
+  footer{padding:16px;text-align:center;color:var(--muted)}
+  /* Chat / AI assistant */
+  .ai-panel{position:fixed;right:18px;bottom:18px;width:340px;max-width:90%;background:#03121a;border-radius:12px;padding:10px;box-shadow:0 10px 30px rgba(0,0,0,0.6);z-index:50}
+  .ai-header{display:flex;align-items:center;gap:10px}
+  .ai-messages{height:260px;overflow:auto;padding:8px;margin-top:8px;background:linear-gradient(#04121b,#021018);border-radius:8px}
+  .msg{padding:8px 10px;border-radius:10px;margin:8px 0;max-width:80%}
+  .msg.user{background:linear-gradient(90deg,#2b6bff33,transparent);align-self:flex-end;text-align:right}
+  .msg.bot{background:linear-gradient(90deg,#ffffff06,transparent)}
+  .ai-input{display:flex;gap:8px;margin-top:8px}
+  .ai-input input{flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+  /* Games */
+  .game-canvas{background:#000;border-radius:8px;display:block;width:100%}
+  .card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+  .card{background:rgba(255,255,255,0.02);padding:12px;border-radius:10px}
+  .btn{background:var(--accent);color:#012; padding:8px 10px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
+  .small{font-size:13px;padding:6px 8px;border-radius:8px}
+  .hidden{display:none}
+  .cookie-bar{position:fixed;left:18px;bottom:18px;background:linear-gradient(90deg,#081d2a,#06202b);padding:12px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.6);z-index:60}
+  .input, textarea{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+  pre.console{background:#011; padding:12px;border-radius:8px;color:#9ff;white-space:pre-wrap;font-family:monospace}
+  .prototype-card{padding:10px;border-radius:8px;background:linear-gradient(90deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));}
+  .article{border-left:3px solid rgba(255,255,255,0.03);padding:10px;margin-bottom:8px}
+  .login-prompt{background:linear-gradient(90deg,#07172b,#041321);padding:12px;border-radius:8px}
+  /* responsive */
+  @media(max-width:880px){
+    main{grid-template-columns:1fr; padding:12px}
+    .ai-panel{width:92%;left:4%;right:4%}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">CASS</div>
+  <nav id="nav">
+    <button onclick="navTo('home')">Home</button>
+    <button onclick="navTo('games')">Games</button>
+    <button onclick="navTo('ai')">AI Assistant</button>
+    <button onclick="navTo('articles')">Articles</button>
+    <button onclick="navTo('prototypes')">Prototypes</button>
+    <button onclick="navTo('hacking')">Hacking Sim</button>
+    <button onclick="navTo('account')">Account</button>
+  </nav>
+  <div style="flex:1"></div>
+  <div id="userBadge" class="muted">Not logged in</div>
+</header>
+
+<main>
+  <aside class="sidebar">
+    <div class="widget">
+      <h3>Welcome to CASS</h3>
+      <div class="muted">Where playful tech meets tiny chaos. Try the games, the assistant, or the simulator.</div>
+    </div>
+
+    <div class="widget">
+      <h4>Quick Links</h4>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="small" onclick="navTo('games')">Play Games</button>
+        <button class="small" onclick="navTo('ai')">Open Assistant</button>
+        <button class="small" onclick="navTo('hacking')">Hacking Sim</button>
+      </div>
+    </div>
+
+    <div class="widget">
+      <h4>Save Status</h4>
+      <div class="muted" id="saveStatus">No saves yet.</div>
+    </div>
+
+    <div class="widget">
+      <h4>Tips</h4>
+      <ul class="muted">
+        <li>Register (in Account) to save progress locally.</li>
+        <li>AI is offline — it’s a helper persona built into the page.</li>
+        <li>Hacking Sim is fictional puzzles only.</li>
+      </ul>
+    </div>
+  </aside>
+
+  <section class="content" id="contentArea">
+    <!-- pages will be dynamically injected here -->
+  </section>
+</main>
+
+<footer>
+  CASS — playful demo site • entirely client-side • fictional hacking simulator for puzzles only
+</footer>
+
+<!-- AI Assistant widget (starts collapsed) -->
+<div id="aiWidget" class="ai-panel hidden" aria-hidden="true">
+  <div class="ai-header">
+    <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(90deg,#0ff,#07a);display:flex;align-items:center;justify-content:center;font-weight:800;color:#002">AI</div>
+    <div>
+      <div style="font-weight:700">Cass Assistant</div>
+      <div class="muted" style="font-size:12px">Offline helper</div>
+    </div>
+    <div style="flex:1"></div>
+    <button class="small" onclick="closeAI()">Close</button>
+  </div>
+  <div class="ai-messages" id="aiMessages"></div>
+  <div class="ai-input">
+    <input id="aiInput" placeholder="Ask Cass assistant for help..." onkeydown="if(event.key==='Enter') sendAI()"/>
+    <button onclick="sendAI()" class="btn">Send</button>
+  </div>
+</div>
+
+<!-- Cookie consent -->
+<div id="cookieBar" class="cookie-bar hidden">
+  <div style="max-width:380px">
+    <div style="font-weight:700">CASS cookies</div>
+    <div class="muted" style="margin-top:6px">We use local cookies & storage to save settings and game progress. All local and private — no servers.</div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button onclick="acceptCookies()" class="btn">Allow cookies & AI help</button>
+      <button onclick="declineCookies()" class="small">Decline</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------------------------
+   Site state & utilities
+   --------------------------- */
+const STATE = {
+  page: 'home',
+  user: null,
+  cookiesAllowed: localStorage.getItem('cass_cookies') === 'yes',
+  saves: JSON.parse(localStorage.getItem('cass_saves') || '{}'),
+};
+
+function setSaveStatus(text){
+  document.getElementById('saveStatus').innerText = text;
+}
+
+function showCookieBarIfNeeded(){
+  if(!localStorage.getItem('cass_cookies')){
+    document.getElementById('cookieBar').classList.remove('hidden');
+  } else {
+    STATE.cookiesAllowed = localStorage.getItem('cass_cookies') === 'yes';
+  }
+}
+
+function acceptCookies(){
+  localStorage.setItem('cass_cookies','yes');
+  STATE.cookiesAllowed = true;
+  document.getElementById('cookieBar').classList.add('hidden');
+  toast('Thanks! Cookies allowed. AI will be functional locally.');
+}
+function declineCookies(){
+  localStorage.setItem('cass_cookies','no');
+  STATE.cookiesAllowed = false;
+  document.getElementById('cookieBar').classList.add('hidden');
+  toast('Cookies declined — some features disabled.');
+}
+
+/* tiny toast */
+function toast(t){
+  const d=document.createElement('div');
+  d.style.position='fixed';d.style.left='50%';d.style.transform='translateX(-50%)';d.style.bottom='24px';
+  d.style.background='rgba(255,255,255,0.06)';d.style.padding='10px 14px';d.style.borderRadius='8px';
+  d.style.zIndex=999;d.innerText=t;document.body.appendChild(d);
+  setTimeout(()=>d.style.opacity=0,2400);setTimeout(()=>d.remove(),3000);
+}
+
+/* navigation */
+function navTo(page){
+  STATE.page = page;
+  renderPage();
+  if(page === 'ai') openAI();
+}
+
+/* login */
+function updateUserBadge(){
+  const el = document.getElementById('userBadge');
+  if(STATE.user){
+    el.innerText = `Hi, ${STATE.user.username}`;
+  } else {
+    el.innerText = 'Not logged in';
+  }
+}
+
+/* quick local registration/login (all client side) */
+function registerUser(username,password){
+  let users = JSON.parse(localStorage.getItem('cass_users') || '{}');
+  if(users[username]) return {ok:false,msg:'User exists'};
+  users[username] = {password: btoa(password), created:Date.now()};
+  localStorage.setItem('cass_users', JSON.stringify(users));
+  return {ok:true};
+}
+function tryLogin(username,password){
+  let users = JSON.parse(localStorage.getItem('cass_users') || '{}');
+  if(users[username] && users[username].password === btoa(password)){
+    STATE.user = {username};
+    sessionStorage.setItem('cass_session', JSON.stringify(STATE.user));
+    updateUserBadge();
+    toast('Logged in locally! Your progress will save to this browser.');
+    return {ok:true};
+  }
+  return {ok:false,msg:'Invalid credentials'};
+}
+function logout(){
+  STATE.user = null;
+  sessionStorage.removeItem('cass_session');
+  updateUserBadge();
+  toast('Logged out.');
+}
+
+/* load session if exists */
+(function loadSession(){
+  const s = sessionStorage.getItem('cass_session');
+  if(s) { STATE.user = JSON.parse(s); }
+  updateUserBadge();
+})();
+
+/* ---------------------------
+   Render pages
+   --------------------------- */
+
+function renderPage(){
+  const el = document.getElementById('contentArea');
+  el.innerHTML = '';
+  const page = STATE.page;
+  if(page === 'home') renderHome(el);
+  else if(page === 'games') renderGames(el);
+  else if(page === 'ai') renderAIPage(el);
+  else if(page === 'articles') renderArticles(el);
+  else if(page === 'prototypes') renderPrototypes(el);
+  else if(page === 'hacking') renderHacking(el);
+  else if(page === 'account') renderAccount(el);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* Home */
+function renderHome(host){
+  host.innerHTML = `
+    <h1>Welcome to CASS</h1>
+    <div class="muted">An interactive playground: games, AI assistant, prototypes, and fictional hacking puzzles.</div>
+    <div style="margin-top:14px" class="card-grid">
+      <div class="card">
+        <h2>Play the Story Game</h2>
+        <div class="muted">Live a day as Cass in school and at home. Choices change your relationships.</div>
+        <div style="margin-top:10px"><button class="btn" onclick="navTo('games'); setTimeout(()=>startStory(),200)">Play Story Game</button></div>
+      </div>
+
+      <div class="card">
+        <h2>RPG: Asteroids & City</h2>
+        <div class="muted">Fly, shoot asteroids, and watch the city react (destructible blocks!).</div>
+        <div style="margin-top:10px"><button class="btn" onclick="navTo('games'); setTimeout(()=>startRPG(),200)">Start RPG</button></div>
+      </div>
+
+      <div class="card">
+        <h2>Assistant</h2>
+        <div class="muted">Ask the offline Cass Assistant for hints, or to save and load progress.</div>
+        <div style="margin-top:10px"><button class="btn" onclick="navTo('ai'); openAI()">Open Assistant</button></div>
+      </div>
+    </div>
+  `;
+}
+
+/* Games page */
+function renderGames(host){
+  host.innerHTML = `
+    <h1>Games</h1>
+    <div class="muted">Pick a game — save slots will persist in this browser if you're logged in</div>
+    <div style="margin-top:12px" class="card-grid">
+      <div class="card">
+        <h3>Story Game — A Day With Cass</h3>
+        <div class="muted">Choose dialog options. Your choices build a simple relationship & mood map.</div>
+        <div style="margin-top:8px">
+          <button class="btn" onclick="startStory()">Play Story</button>
+          <button class="small" onclick="saveStory()">Save</button>
+        </div>
+        <div id="storyArea" style="margin-top:10px"></div>
+      </div>
+
+      <div class="card">
+        <h3>RPG Shooter — Asteroids & City</h3>
+        <div class="muted">Move with arrow keys / WASD — shoot with Space / Click.</div>
+        <div style="margin-top:8px">
+          <button class="btn" onclick="startRPG()">Start RPG</button>
+          <button class="small" onclick="saveRPG()">Save</button>
+        </div>
+        <div style="margin-top:8px"><canvas id="rpgCanvas" width="640" height="360" class="game-canvas"></canvas></div>
+        <div class="muted" style="margin-top:8px">City Health: <span id="cityHealth">100</span></div>
+      </div>
+    </div>
+  `;
+}
+
+/* AI page placeholder (AI widget handled separately) */
+function renderAIPage(host){
+  host.innerHTML = `
+    <h1>Cass Assistant</h1>
+    <div class="muted">An offline assistant that provides hints and helps manage local saves.</div>
+    <div style="margin-top:8px">
+      <button class="btn" onclick="openAI()">Open Assistant Widget</button>
+      <button class="small" onclick="resetAIConversation()">Reset Conversation</button>
+    </div>
+    <div style="margin-top:12px" class="card">
+      <h3>Tips from the assistant</h3>
+      <ul class="muted">
+        <li>Use the assistant to request hints for story choices.</li>
+        <li>Assistant can show your saved slots: try "show saves".</li>
+        <li>Everything stays in your browser — no outward network calls.</li>
+      </ul>
+    </div>
+  `;
+}
+
+/* Articles */
+const FAKE_ARTICLES = [
+  {id:'a1',title:'Cass Studio Unveils City Sandbox', by:'CASS Daily', date:'Sep 10, 2025', excerpt:'A playful demo game engine allows simulated destruction without real harm.'},
+  {id:'a2',title:'Prototype UI That Anticipates Mood', by:'Design Fiction', date:'Aug 31, 2025', excerpt:'A mock assistant tries to adapt to user mood in safe ways.'},
+  {id:'a3',title:'Hacking Sim: Fiction vs Reality', by:'TechPlay', date:'Jul 04, 2025', excerpt:'We examine how simulations can teach puzzle logic without real-world instructions.'}
+];
+function renderArticles(host){
+  host.innerHTML = `<h1>Articles & Mock Press</h1><div class="muted">Fake news for storytelling and fun.</div><div style="margin-top:12px">` +
+    FAKE_ARTICLES.map(a=>`<div class="article"><strong>${a.title}</strong> <div class="muted">${a.by} • ${a.date}</div><div style="margin-top:6px">${a.excerpt}</div><div style="margin-top:6px"><button class="small" onclick="openArticle('${a.id}')">Read</button></div></div>`).join('') +
+    `</div><div id="articleView" style="margin-top:12px"></div>`;
+}
+function openArticle(id){
+  const a = FAKE_ARTICLES.find(x=>x.id===id);
+  if(!a) return;
+  const view = document.getElementById('articleView');
+  view.innerHTML = `<div class="card"><h2>${a.title}</h2><div class="muted">${a.by} • ${a.date}</div><div style="margin-top:12px">
+  <p>This is a fictional article created for the CASS site. The story explores the boundaries between playful simulation and real systems. It is purely illustrative.</p>
+  <p class="muted">[This is a mock article. No real-world instructions or hacking advice are included.]</p>
+  <button class="small" onclick="document.getElementById('articleView').innerHTML=''">Close</button>
+  </div></div>`;
+}
+
+/* Prototypes */
+function renderPrototypes(host){
+  host.innerHTML = `
+    <h1>Prototypes</h1>
+    <div class="muted">Interactive UI prototypes — try the mini widgets below.</div>
+    <div style="margin-top:12px" class="card-grid">
+      <div class="prototype-card">
+        <h4>Mini Calculator (prototype)</h4>
+        <input id="calcIn" class="input" placeholder="Enter expression (e.g. 12+3*2)" />
+        <div style="margin-top:8px"><button class="btn" onclick="runCalc()">Compute</button></div>
+        <div id="calcOut" class="muted" style="margin-top:8px"></div>
+      </div>
+      <div class="prototype-card">
+        <h4>Card Flip Demo</h4>
+        <div style="display:flex;gap:8px"><div id="flipCard" class="card" style="width:180px;cursor:pointer" onclick="flipIt()">Click to flip</div></div>
+      </div>
+    </div>
+  `;
+}
+function runCalc(){
+  const v = document.getElementById('calcIn').value;
+  try {
+    // safe eval: allow only numbers and +-*/(). and spaces
+    if(!/^[0-9+\-*/().\s]+$/.test(v)) throw 'Invalid chars';
+    const res = Function('"use strict";return ('+v+')')();
+    document.getElementById('calcOut').innerText = 'Result: ' + res;
+  } catch(e){
+    document.getElementById('calcOut').innerText = 'Error computing expression';
+  }
+}
+let flipped=false;
+function flipIt(){
+  const el = document.getElementById('flipCard');
+  flipped = !flipped;
+  el.innerHTML = flipped ? '<div style="font-weight:700">Back — prototype</div><div class="muted">Pretty neat.</div>' : '<div style="font-weight:700">Front — prototype</div><div class="muted">Click again.</div>';
+}
+
+/* Hacking simulator (fictional puzzle) */
+const HACK_STEPS = [
+  {id:1, prompt:"Enter the boot phrase (hint: it's a friendly greeting plus 2025)", code:"hello2025"},
+  {id:2, prompt:"Enter the secret token (reverse 'CASS')", code:"SSAC"},
+  {id:3, prompt:"Enter the puzzle result (sum of 7+14)", code:"21"},
+];
+function renderHacking(host){
+  host.innerHTML = `
+    <h1>Hacking Simulator (Fictional)</h1>
+    <div class="muted">This is a puzzle game. It does NOT teach real hacking. Type the correct codes to progress.</div>
+    <div style="margin-top:12px" class="card">
+      <div id="hackConsole">
+        <div class="muted">Step 1: <span id="hackPrompt">${HACK_STEPS[0].prompt}</span></div>
+        <div style="margin-top:8px"><input id="hackInput" class="input" placeholder="Type code here..." /></div>
+        <div style="margin-top:8px"><button class="btn" onclick="submitHack()">Submit</button> <button class="small" onclick="resetHack()">Reset</button></div>
+        <div style="margin-top:12px"><pre id="hackLog" class="console">Console ready.\n</pre></div>
+      </div>
+    </div>
+  `;
+  window.hackIndex = 0;
+}
+function submitHack(){
+  const v = document.getElementById('hackInput').value.trim();
+  const log = document.getElementById('hackLog');
+  const idx = window.hackIndex || 0;
+  const step = HACK_STEPS[idx];
+  if(!v){
+    log.innerText += "\n> No input entered.";
+    return;
+  }
+  log.innerText += `\n> ${v}`;
+  if(v === step.code){
+    log.innerText += `\n[OK] Step ${idx+1} cleared.`;
+    window.hackIndex = idx + 1;
+    if(window.hackIndex >= HACK_STEPS.length){
+      log.innerText += `\n[COMPLETE] You solved the fictional puzzle! Here's a playful reward: the page reveals a confetti animation.`;
+      showConfetti();
+    } else {
+      document.getElementById('hackPrompt').innerText = HACK_STEPS[window.hackIndex].prompt;
+      log.innerText += `\n[Next] ${HACK_STEPS[window.hackIndex].prompt}`;
+    }
+  } else {
+    log.innerText += `\n[FAIL] Incorrect code. Hint: think simple and safe.`;
+  }
+  document.getElementById('hackInput').value = '';
+  log.scrollTop = log.scrollHeight;
+}
+function resetHack(){
+  window.hackIndex = 0;
+  if(document.getElementById('hackPrompt')) document.getElementById('hackPrompt').innerText = HACK_STEPS[0].prompt;
+  if(document.getElementById('hackLog')) document.getElementById('hackLog').innerText = "Console ready.\n";
+}
+
+/* playable confetti (simple) */
+function showConfetti(){
+  const N = 40;
+  for(let i=0;i<N;i++){
+    const d = document.createElement('div');
+    d.style.position='fixed';
+    d.style.left = (50 + (Math.random()-0.5)*60) + '%';
+    d.style.top = '-10%';
+    d.style.width='10px';d.style.height='14px';
+    d.style.background = ['#ffcc00','#ff66b2','#7df9ff','#82ff7a'][Math.floor(Math.random()*4)];
+    d.style.borderRadius='3px';
+    d.style.opacity = 0.95;
+    d.style.transform = `rotate(${Math.random()*360}deg)`;
+    d.style.zIndex=9999;
+    d.style.transition = 'transform 2.6s linear, top 2.6s linear, opacity 0.6s';
+    document.body.appendChild(d);
+    setTimeout(()=>{ d.style.top = (60 + Math.random()*30) + '%'; d.style.transform = 'rotate(720deg)'; },30);
+    setTimeout(()=>{ d.style.opacity=0; },2500);
+    setTimeout(()=>d.remove(),3200);
+  }
+}
+
+/* ---------------------------
+   Story game (choice-based)
+   --------------------------- */
+const STORY = {
+  state: {mood:50, friends:50, day:0},
+  nodes: {
+    0:{text:"Morning. Alarm rings. Do you snooze or get up early to study?", choices:[{t:"Snooze",next:1,delta:{mood:-5}},{t:"Get up",next:2,delta:{mood:+5}}]},
+    1:{text:"You snoozed. Late for school. Friend texts: 'You ok?' Respond?", choices:[{t:"Say sorry",next:3,delta:{friends:-5}},{t:"Ignore",next:4,delta:{friends:-10}}]},
+    2:{text:"You study and feel ready. You see a classmate who looks nervous. Help them?", choices:[{t:"Help",next:5,delta:{friends:+8}},{t:"Focus on exam",next:6,delta:{mood:+2}}]},
+    3:{text:"They forgive you. You both laugh later. End of day — do you play games or study more?", choices:[{t:"Play games",next:7,delta:{mood:+8}},{t:"Study",next:8,delta:{mood:-2}}]},
+    4:{text:"They feel ignored. End of day is quiet.", choices:[{t:"Reflect",next:7,delta:{mood:-3}}]},
+    5:{text:"They thank you, your friendship improves!", choices:[{t:"Celebrate",next:7,delta:{mood:+6}}]},
+    6:{text:"You aced the test but feel a little lonely.", choices:[{t:"Treat yourself",next:7,delta:{mood:+3}}]},
+    7:{text:"Night. You consider saving your day summary.", choices:[{t:"Save summary",next:null,delta:{}} , {t:"End",next:null,delta:{}}]},
+    8:{text:"Extra study paid off — good grades! End.", choices:[{t:"End",next:null,delta:{mood:+5}}]},
+  }
+};
+
+function startStory(){
+  const area = document.getElementById('storyArea') || document.createElement('div');
+  area.innerHTML = '';
+  document.getElementById('storyArea')?.appendChild(area);
+  STORY.state = {mood:50,friends:50,day:0};
+  renderStoryNode(0);
+}
+function renderStoryNode(id){
+  const node = STORY.nodes[id];
+  const area = document.getElementById('storyArea');
+  if(!node) {
+    area.innerHTML = '<div class="muted">The story has ended. Use Save or restart.</div>';
+    return;
+  }
+  area.innerHTML = `<div class="card"><h3>Story</h3><p>${node.text}</p><div class="muted">Mood: ${STORY.state.mood} • Friends: ${STORY.state.friends}</div><div style="margin-top:8px" id="storyChoices"></div></div>`;
+  const where = document.getElementById('storyChoices');
+  node.choices.forEach(c=>{
+    const btn = document.createElement('button');
+    btn.className = 'small';
+    btn.innerText = c.t;
+    btn.onclick = ()=>{
+      if(c.delta) {
+        for(const k in c.delta) STORY.state[k] = Math.max(0, Math.min(100, (STORY.state[k]||0)+c.delta[k]));
+      }
+      if(c.next === null) {
+        area.innerHTML += `<div class="muted" style="margin-top:8px">Summary saved to slot "story_slot" (local)</div>`;
+        saveToSlot('story_slot',{state:STORY.state});
+      } else {
+        renderStoryNode(c.next);
+      }
+    };
+    where.appendChild(btn);
+  });
+}
+function saveStory(){
+  if(!STATE.user){ toast('Log in to save to your user slot.'); return;}
+  saveToSlot('story_slot',{state:STORY.state, savedAt:Date.now()}, true);
+}
+
+/* ---------------------------
+   RPG shooter (canvas)
+   --------------------------- */
+let rpg = {
+  running:false, canvas:null, ctx:null, keys:{}, player:{x:320,y:300,w:28,h:18}, bullets:[], asteroids:[], blocks:[], score:0, cityHealth:100
+};
+
+function startRPG(){
+  const canvas = document.getElementById('rpgCanvas');
+  if(!canvas) return;
+  rpg.canvas = canvas; rpg.ctx = canvas.getContext('2d');
+  rpg.bullets=[]; rpg.asteroids=[]; rpg.blocks=[];
+  rpg.player = {x:320,y:300,w:28,h:18};
+  rpg.score = 0; rpg.cityHealth = 100;
+  // create city blocks
+  for(let i=0;i<10;i++){
+    rpg.blocks.push({x:40 + i*56, y:330, w:48, h:24, hp:3});
+  }
+  // event listeners
+  window.addEventListener('keydown', rpgKeyDown);
+  window.addEventListener('keyup', rpgKeyUp);
+  canvas.onclick = ()=>{ shootBullet(); };
+  rpg.running = true;
+  spawnAsteroids();
+  requestAnimationFrame(rpgLoop);
+}
+
+function rpgKeyDown(e){ rpg.keys[e.key.toLowerCase()] = true; }
+function rpgKeyUp(e){ rpg.keys[e.key.toLowerCase()] = false; }
+function shootBullet(){
+  rpg.bullets.push({x:rpg.player.x + rpg.player.w/2, y:rpg.player.y - 6, vy:-6});
+}
+function spawnAsteroids(){
+  for(let i=0;i<6;i++){
+    rpg.asteroids.push({x: Math.random()*620 + 10, y: -Math.random()*800, r:12 + Math.random()*18, vx:(Math.random()-0.5)*1.6, vy:1.0 + Math.random()*1.8});
+  }
+  // continuous spawning
+  setTimeout(()=>{ if(rpg.running) spawnAsteroids(); }, 2500);
+}
+
+function rpgLoop(){
+  if(!rpg.running) return;
+  const c = rpg.canvas, ctx = rpg.ctx;
+  ctx.clearRect(0,0,c.width,c.height);
+  // player move
+  if(rpg.keys['arrowleft'] || rpg.keys['a']) rpg.player.x = Math.max(6, rpg.player.x - 4);
+  if(rpg.keys['arrowright'] || rpg.keys['d']) rpg.player.x = Math.min(c.width - rpg.player.w - 6, rpg.player.x + 4);
+  if(rpg.keys[' '] || rpg.keys['space']) { if((Date.now()%200) < 50) shootBullet(); }
+  // draw player
+  ctx.fillStyle = '#8ef'; ctx.fillRect(rpg.player.x, rpg.player.y, rpg.player.w, rpg.player.h);
+  // bullets
+  ctx.fillStyle = '#ffb';
+  for(let b of rpg.bullets){ b.y += b.vy; ctx.fillRect(b.x-2,b.y,4,8); }
+  rpg.bullets = rpg.bullets.filter(b=>b.y > -20);
+  // asteroids
+  ctx.fillStyle = '#aaa';
+  for(let a of rpg.asteroids){
+    a.x += a.vx; a.y += a.vy;
+    ctx.beginPath(); ctx.arc(a.x,a.y,a.r,0,Math.PI*2); ctx.fill();
+    // collision with bullets
+    for(let i=rpg.bullets.length-1;i>=0;i--){
+      const b = rpg.bullets[i];
+      if(Math.hypot(b.x - a.x, b.y - a.y) < a.r + 4){
+        // hit
+        rpg.asteroids.splice(rpg.asteroids.indexOf(a),1);
+        rpg.bullets.splice(i,1);
+        rpg.score += Math.floor(a.r);
+        break;
+      }
+    }
+    // hits city blocks if pass bottom
+    if(a.y > 320){
+      // find nearest block
+      for(let b of rpg.blocks){
+        if(Math.abs(a.x - (b.x+b.w/2)) < b.w/1.5 && b.hp>0){
+          b.hp--; if(b.hp<=0) rpg.cityHealth -= 10;
+          rpg.asteroids.splice(rpg.asteroids.indexOf(a),1);
+          break;
+        }
+      }
+      // if no block matched, city health reduces
+      if(a.y > 360){
+        rpg.asteroids.splice(rpg.asteroids.indexOf(a),1);
+        rpg.cityHealth -= 5;
+      }
+    }
+  }
+  // draw city blocks
+  for(let b of rpg.blocks){
+    ctx.fillStyle = b.hp>0 ? '#2a9' : '#440';
+    ctx.fillRect(b.x,b.y - b.h, b.w, b.h);
+    ctx.fillStyle = '#000'; ctx.fillText(b.hp>0 ? '█'.repeat(b.hp) : '', b.x+6, b.y-6);
+  }
+  // HUD
+  ctx.fillStyle = '#9ff'; ctx.fillText('Score: '+rpg.score,10,16);
+  ctx.fillText('City: '+rpg.cityHealth,520,16);
+  document.getElementById('cityHealth').innerText = rpg.cityHealth;
+
+  // game over
+  if(rpg.cityHealth <= 0){
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle = '#fdd'; ctx.font='28px sans-serif'; ctx.fillText('City destroyed — Game Over', 90,180);
+    rpg.running = false;
+    setSaveStatus(`RPG ended with score ${rpg.score}`);
+    return;
+  }
+
+  requestAnimationFrame(rpgLoop);
+}
+
+function saveRPG(){
+  if(!STATE.user){ toast('Log in to save your RPG run.'); return;}
+  saveToSlot('rpg_slot',{score:rpg.score,cityHealth:rpg.cityHealth, blocks:rpg.blocks, savedAt:Date.now()}, true);
+}
+
+/* ---------------------------
+   Local save helpers
+   --------------------------- */
+function saveToSlot(slot,obj,notify){
+  const saves = JSON.parse(localStorage.getItem('cass_saves') || '{}');
+  saves[slot] = obj;
+  localStorage.setItem('cass_saves', JSON.stringify(saves));
+  setSaveStatus(`Saved slot ${slot}`);
+  if(notify) toast('Saved to local slot: '+slot);
+}
+
+/* ---------------------------
+   AI Assistant (client-side stub)
+   --------------------------- */
+function openAI(){ document.getElementById('aiWidget').classList.remove('hidden'); document.getElementById('aiWidget').ariaHidden=false; }
+function closeAI(){ document.getElementById('aiWidget').classList.add('hidden'); document.getElementById('aiWidget').ariaHidden=true; }
+function resetAIConversation(){ document.getElementById('aiMessages').innerHTML=''; addAIMessage("Hello! I'm Cass Assistant. I'm offline and here to help."); }
+function addAIMessage(text, who='bot'){
+  const box = document.createElement('div');
+  box.className = 'msg ' + (who==='user' ? 'user':'bot');
+  box.innerText = text;
+  document.getElementById('aiMessages').appendChild(box);
+  document.getElementById('aiMessages').scrollTop = document.getElementById('aiMessages').scrollHeight;
+}
+resetAIConversation();
+
+function sendAI(){
+  if(localStorage.getItem('cass_cookies') === 'no'){
+    addAIMessage("I can't run AI features because you declined cookies/local storage.", 'bot');
+    return;
+  }
+  const input = document.getElementById('aiInput');
+  const text = input.value.trim();
+  if(!text) return;
+  addAIMessage(text,'user');
+  input.value = '';
+  // simple rule-based assistant (safe, local)
+  setTimeout(()=>{
+    let reply = "Hmm, I can help with site hints. Try commands like: 'show saves', 'hint story', 'save rpg', or 'open hacking'.";
+    const t = text.toLowerCase();
+    if(t.includes('save rpg')){ saveRPG(); reply = 'RPG saved to your local slot (if logged in).'; }
+    else if(t.includes('show saves')){ reply = 'Saves: ' + localStorage.getItem('cass_saves') || '{}'; }
+    else if(t.includes('hint story')){ reply = 'In the story, helping friends increases friends score; snoozing reduces mood.'; }
+    else if(t.includes('open hacking')){ navTo('hacking'); reply = 'Opening the Hacking Simulator page.'; }
+    else if(t.includes('play rpg')){ navTo('games'); startRPG(); reply = 'Starting the RPG for you.'; }
+    else if(t.includes('who are you')) reply = "I'm Cass Assistant — an offline helper persona built into the page.";
+    else if(t.includes('help')) reply = "I can give hints and manage local saves. Example: 'show saves' or 'hint story'.";
+    addAIMessage(reply,'bot');
+  },350);
+}
+
+/* ---------------------------
+   Account page
+   --------------------------- */
+function renderAccount(host){
+  host.innerHTML = `
+    <h1>Account</h1>
+    <div class="muted">Local accounts only: credentials and progress stay in your browser's storage.</div>
+    <div style="margin-top:12px" class="card-grid">
+      <div class="card">
+        <h3>Register</h3>
+        <input id="regUser" class="input" placeholder="username" />
+        <input id="regPass" type="password" class="input" placeholder="password" style="margin-top:8px" />
+        <div style="margin-top:8px"><button class="btn" onclick="doRegister()">Register</button></div>
+      </div>
+      <div class="card">
+        <h3>Login</h3>
+        <input id="logUser" class="input" placeholder="username" />
+        <input id="logPass" type="password" class="input" placeholder="password" style="margin-top:8px" />
+        <div style="margin-top:8px"><button class="btn" onclick="doLogin()">Login</button> <button class="small" onclick="logout()">Logout</button></div>
+      </div>
+      <div class="card">
+        <h3>Session</h3>
+        <div id="sessInfo" class="muted">Nothing yet</div>
+        <div style="margin-top:8px"><button class="small" onclick="exportSaves()">Export Saves</button> <button class="small" onclick="clearAll()">Clear Local Data</button></div>
+      </div>
+    </div>
+  `;
+  updateSessionInfo();
+}
+function doRegister(){
+  const u = document.getElementById('regUser').value.trim();
+  const p = document.getElementById('regPass').value;
+  if(!u||!p){ toast('Provide username & password'); return; }
+  const r = registerUser(u,p);
+  if(r.ok){ toast('Registered. Now login.'); } else toast(r.msg);
+}
+function doLogin(){
+  const u = document.getElementById('logUser').value.trim();
+  const p = document.getElementById('logPass').value;
+  const r = tryLogin(u,p);
+  if(r.ok){ updateSessionInfo(); } else toast(r.msg);
+}
+function updateSessionInfo(){
+  const el = document.getElementById('sessInfo');
+  const users = JSON.parse(localStorage.getItem('cass_users') || '{}');
+  el.innerText = `Local users: ${Object.keys(users).join(', ') || '(none)'}\nCurrent session: ${STATE.user ? STATE.user.username : 'no'}`;
+}
+function exportSaves(){
+  const data = localStorage.getItem('cass_saves') || '{}';
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'cass_saves.json'; a.click();
+  URL.revokeObjectURL(url);
+}
+function clearAll(){
+  if(!confirm('Clear local data? This removes saves, users, and cookies from this browser.')) return;
+  localStorage.removeItem('cass_saves');
+  localStorage.removeItem('cass_users');
+  localStorage.removeItem('cass_cookies');
+  sessionStorage.removeItem('cass_session');
+  toast('Cleared local data.');
+  updateSessionInfo();
+}
+
+/* ---------------------------
+   Init
+   --------------------------- */
+showCookieBarIfNeeded();
+renderPage();
+updateUserBadge();
+
+/* expose certain functions for buttons */
+window.navTo = navTo;
+window.startStory = startStory;
+window.startRPG = startRPG;
+window.saveRPG = saveRPG;
+window.saveStory = saveStory;
+window.openAI = openAI;
+window.closeAI = closeAI;
+window.renderPage = renderPage;
+window.submitHack = submitHack;
+window.resetHack = resetHack;
+window.saveToSlot = saveToSlot;
+window.exportSaves = exportSaves;
+window.clearAll = clearAll;
+
+</script>
+
+</body>
+</html>
